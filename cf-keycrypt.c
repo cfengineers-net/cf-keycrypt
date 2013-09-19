@@ -36,11 +36,11 @@ void usage() {
 "Use CFEngine cryptographic keys to encrypt and decrypt files, eg. files containing\n"
 "passwords or certificates.\n"
 "\n" 
-"  -e       Encrypt with key\n"
-"  -d       Decrypt with key\n"
-"  -i       File to encrypt/decrypt\n"
-"  -o       File to write encrypted/decrypted contents to\n"
-"  -h       Print help\n"
+"  -e       Encrypt with key.\n"
+"  -d       Decrypt with key.\n"
+"  -i       File to encrypt/decrypt. '-' reads from stdin.\n"
+"  -o       File to write encrypted/decrypted contents to. '-' writes to stdout.\n"
+"  -h       Print help.\n"
 "\n"
 "Examples:\n"
 "  Encrypt:\n"
@@ -108,7 +108,9 @@ long int rsa_encrypt(char *pubfile, char *filein, char *fileout) {
 		return -1;
 	}
 
-	if(!(infile = fopen(filein, "r"))) {
+	if((strcmp("-",filein) == 0)) {
+		infile = stdin;
+	}else if(!(infile = fopen(filein, "r"))) {
 		fprintf(stderr, "Error: Cannot locate input file.\n");
 		return -1;
 	}
@@ -149,7 +151,7 @@ long int rsa_decrypt(char *secfile, char *cryptfile, char *plainfile) {
 	RSA* key=NULL;
 	char *tmpplain=NULL, *tmpciph=NULL;
 
-	FILE *fp=NULL;
+	FILE *infile=NULL;
 	FILE *outfile = NULL;
 
 	key = (RSA *)readseckey(secfile);
@@ -157,7 +159,9 @@ long int rsa_decrypt(char *secfile, char *cryptfile, char *plainfile) {
 		return -1;
 	}
 
-	if(!(fp = fopen(cryptfile, "r"))) {
+	if((strcmp("-",cryptfile) == 0)) {
+		infile = stdin;
+	}else if(!(infile = fopen(cryptfile, "r"))) {
 		fprintf(stderr, "Error: Cannot locate input file.\n");
 		return -1;
 	}
@@ -174,10 +178,10 @@ long int rsa_decrypt(char *secfile, char *cryptfile, char *plainfile) {
 	tmpciph = (unsigned char *)malloc(ks * sizeof(unsigned char));
 	tmpplain = (unsigned char *)malloc(ks * sizeof(unsigned char));
 	//printf("Keysize: %d\n", ks);
-	while(!feof(fp)) {
+	while(!feof(infile)) {
 		memset(tmpciph, '\0', ks);
 		memset(tmpplain, '\0', ks);
-		len = fread(tmpciph, 1, ks, fp);
+		len = fread(tmpciph, 1, ks, infile);
 		if(len > 0){
 			if((size = RSA_private_decrypt(ks, tmpciph, tmpplain, key, RSA_PKCS1_PADDING)) == -1) {
 				fprintf(stderr, "%s\n", ERR_error_string(ERR_get_error(), NULL));
@@ -186,7 +190,7 @@ long int rsa_decrypt(char *secfile, char *cryptfile, char *plainfile) {
 		}
 		fwrite(tmpplain,1,strlen(tmpplain),outfile);
 	}
-	fclose(fp);
+	fclose(infile);
 	fclose(outfile);
 	free(tmpplain);
 	free(tmpciph);
