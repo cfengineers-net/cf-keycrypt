@@ -24,14 +24,25 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/rsa.h>
+#include <tchdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <netdb.h>
 
 #define STDIN     0
 #define STDOUT    1
 
+#define WORKDIR "/var/cfengine"
+//#define WORKDIR "./"
+#define LASTSEEN_DB WORKDIR "/cf_lastseen.tcdb"
+#define PPKEYS WORKDIR "/ppkeys"
+#define BUFSIZE 1024
+
 void usage() {
 	printf(
 "\n"
-"Usage: cf-keycrypt [-e public-key|-d private-key] -o outfile -i infile [-h]\n"
+"Usage: cf-keycrypt [-e public-key|-d private-key|-H hostname-or-ip] -o outfile -i infile [-h]\n"
 "\n"
 "Use CFEngine cryptographic keys to encrypt and decrypt files, eg. files containing\n"
 "passwords or certificates.\n"
@@ -40,6 +51,7 @@ void usage() {
 "  -d       Decrypt with key.\n"
 "  -i       File to encrypt/decrypt. '-' reads from stdin.\n"
 "  -o       File to write encrypted/decrypted contents to. '-' writes to stdout.\n"
+"  -H       Hostname/IP to encrypt for, gets data from lastseen database\n"
 "  -h       Print help.\n"
 "\n"
 "Examples:\n"
@@ -54,6 +66,65 @@ void usage() {
 "Copyright (C) cfengineers.net\n"
 "\n"
 );
+}
+
+void *get_in_addr(struct sockaddr *sa) {
+	if (sa->sa_family == AF_INET)
+		return &(((struct sockaddr_in*)sa)->sin_addr);
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+int file_exist(char *filename) {
+	struct stat buffer;   
+	return (stat (filename, &buffer) == 0);
+}
+
+char *get_host_pubkey(char *host) {
+	char *key;
+	char value[BUFSIZE];
+	char *buffer = (char *) malloc(BUFSIZE *sizeof(char));
+	char *keyname = NULL;
+	char needle[BUFSIZE];
+	TCHDB *hdb;
+  hdb = tchdbnew();
+	int ecode;
+	struct addrinfo *result;
+	struct addrinfo *res;
+
+	if(tchdbopen(hdb,LASTSEEN_DB,HDBOREADER) != 1){
+		printf("%s for database '%s'\n",tchdberrmsg(tchdbecode(hdb)),LASTSEEN_DB);
+		return NULL;
+	}
+	int error = getaddrinfo(host,NULL,NULL,&result);
+
+	for(res = result; res != NULL; res = res->ai_next) {
+		inet_ntop(res->ai_family, get_in_addr((struct sockaddr *)res->ai_addr), needle, sizeof(needle));
+
+		tchdbiterinit(hdb);
+		while((key = tchdbiternext2(hdb)) != NULL && keyname == NULL){
+			if(strspn(key,"k") == 1){
+				tchdbget3(hdb, key, strlen(key) + 1, value, BUFSIZE);
+				if(strcmp(value,needle) == 0){
+					keyname = ++key;
+				}
+			}
+		}
+	}
+	tchdbclose(hdb);
+
+	if(keyname) {
+		sprintf(buffer,"%s/root-%s.pub",PPKEYS,keyname);
+		return buffer;
+	}else{
+		for(res = result; res != NULL; res = res->ai_next) {
+			inet_ntop(res->ai_family, get_in_addr((struct sockaddr *)res->ai_addr), needle, sizeof(needle));
+			sprintf(buffer,"%s/root-%s.pub",PPKEYS,needle);
+			if(file_exist(buffer)){
+				return buffer;
+			}
+		}
+	}
+	return NULL;
 }
 
 void *readseckey(char *secfile) {
@@ -84,7 +155,7 @@ void *readpubkey(char *pubfile) {
 	static char *passphrase = "Cfengine passphrase";
 
 	if((fp = fopen(pubfile, "r")) == NULL) {
-		fprintf(stderr,"Error: Cannot locate Public Key file.\n");
+		fprintf(stderr,"Error: Cannot locate Public Key file '%s'.\n", pubfile);
 		return NULL;
 	}
 	if((key = PEM_read_RSAPublicKey(fp,(RSA **)NULL,NULL,passphrase)) == NULL) {
@@ -131,7 +202,7 @@ long int rsa_encrypt(char *pubfile, char *filein, char *fileout) {
 	while(!feof(infile)) {
 		memset(tmpplain, '\0', ks);
 		memset(tmpciph, '\0', ks);
-		len = fread(tmpplain, 1, ks-11, infile);
+		len = fread(tmpplain, 1, ks-RSA_PKCS1_PADDING_SIZE, infile);
 		if((size = RSA_public_encrypt(strlen(tmpplain), tmpplain, tmpciph, key, RSA_PKCS1_PADDING)) == -1) {
 			fprintf(stderr, "%s\n", ERR_error_string(ERR_get_error(), NULL));
 			return -1;
@@ -206,12 +277,13 @@ int main(int argc, char *argv[]) {
 	char *key = NULL;
 	char *infile = NULL;
 	char *outfile = NULL;
+	char *host = NULL;
 	int encrypt = 0;
 	int decrypt = 0;
 	int c = 0;
 	int size = 0;
 
-  while ((c = getopt (argc, argv, "he:d:i:o:")) != -1)
+  while ((c = getopt (argc, argv, "he:d:i:o:H:")) != -1)
 		switch (c)
 			{
 				case 'e':
@@ -228,6 +300,10 @@ int main(int argc, char *argv[]) {
 				case 'o':
 					outfile = optarg;
 					break;
+				case 'H':
+					encrypt = 1;
+					host = optarg;
+					break;
 				case 'h':
 					usage();
 					exit(1);
@@ -236,6 +312,14 @@ int main(int argc, char *argv[]) {
 					usage();
 					exit(1);
 			}
+
+	if(host){
+		key = get_host_pubkey(host);
+		if(!key){
+			fprintf(stderr,"ERROR: Unable to locate public key for host %s\n",host);
+			exit(1);
+		}
+	}
 
 	if(encrypt > 0 && key && infile && outfile){
 		size = rsa_encrypt(key, infile, outfile);
