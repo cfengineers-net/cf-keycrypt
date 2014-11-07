@@ -1,0 +1,62 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" (C) Copyright 2014 Michal Svamberg <svamberg@civ.zcu.cz>,
+.\"
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH CF-KEYCRYPT 1 "November  7, 2014"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+cf-keycrypt \- Use CFEngine cryptographic keys to encrypt and decrypt files
+.SH SYNOPSIS
+.B cf-keycrypt
+.R [-e public-key|-d private-key|-H hostname-or-ip] -o outfile -i infile [-h]
+.SH DESCRIPTION
+Use CFEngine cryptographic keys to encrypt and decrypt files, eg. files containing passwords or certificates.
+.PP
+.\" TeX users may be more comfortable with the \fB<whatever>\fP and
+.\" \fI<whatever>\fP escape sequences to invode bold face and italics,
+.\" respectively.
+.SH OPTIONS
+.TP
+.B \-e
+Encrypt with key.
+.TP
+.B \-d
+Decrypt with key.
+.TP
+.B \-i
+File to encrypt/decrypt. '-' reads from stdin.
+.TP
+.B \-o
+File to write encrypted/decrypted contents to. '-' writes to stdout.
+.TP
+.B \-H
+Hostname/IP to encrypt for, gets data from lastseen database.
+.TP
+.B \-h
+Show summary of options.
+.SH EXAMPLES
+.B Encrypt 
+myplain.dat to mycrypt.dat by public key localhost.pub:
+
+cf-keycrypt -e /var/cfengine/ppkeys/localhost.pub -i myplain.dat -o mycrypt.dat
+
+.B Decrypt 
+mycrypt.dat to myplain.dat by private key localhost.priv:
+
+cf-keycrypt -d /var/cfengine/ppkeys/localhost.priv -i mycrypt.dat -o myplain.dat
+.SH SEE ALSO
+.BR cf-key (8),
+.br
