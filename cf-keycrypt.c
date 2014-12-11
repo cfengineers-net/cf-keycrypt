@@ -79,10 +79,10 @@ int file_exist(char *filename) {
 char *get_host_pubkey(char *host) {
 	char *key;
 	char value[BUFSIZE];
-	//char *buffer = (char *) malloc(BUFSIZE *sizeof(char));
+	char *buffer = (char *) malloc(BUFSIZE *sizeof(char));
 	//char *keyname = NULL;
 	char hash[CF_HOSTKEY_STRING_SIZE];
-	char buffer[BUFSIZE];
+	//char buffer[BUFSIZE];
 	char ipaddress[BUFSIZE];
 	int ecode;
 	struct addrinfo *result;
@@ -95,18 +95,18 @@ char *get_host_pubkey(char *host) {
 		inet_ntop(res->ai_family, get_in_addr((struct sockaddr *)res->ai_addr), ipaddress, sizeof(ipaddress));
 		if((strcmp(ipaddress, "127.0.0.1") == 0) || (strcmp(ipaddress, "::1") == 0)){
 			found = true;
-			sprintf(buffer,"%s/ppkeys/localhost.pub",WORKDIR);
+			snprintf(buffer, BUFSIZE * sizeof(char), "%s/ppkeys/localhost.pub", WORKDIR);
 			return buffer;
 		}
 		found = Address2Hostkey(hash, sizeof(hash), ipaddress);
 	}
 	if(found) {
-		sprintf(buffer,"%s/ppkeys/root-%s.pub",WORKDIR,hash);
+		snprintf(buffer, BUFSIZE * sizeof(char), "%s/ppkeys/root-%s.pub", WORKDIR, hash);
 		return buffer;
 	}else{
 		for(res = result; res != NULL; res = res->ai_next) {
 			inet_ntop(res->ai_family, get_in_addr((struct sockaddr *)res->ai_addr), ipaddress, sizeof(ipaddress));
-			sprintf(buffer,"%s/ppkeys/root-%s.pub",WORKDIR,ipaddress);
+			snprintf(buffer, BUFSIZE * sizeof(char), "%s/ppkeys/root-%s.pub", WORKDIR, ipaddress);
 			if(file_exist(buffer)){
 				return buffer;
 			}
