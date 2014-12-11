@@ -5,7 +5,7 @@ CC=gcc
 # Solaris:
 # LDFLAGS= -R/var/cfengine/lib -L/var/cfengine/lib
 LDFLAGS= -L/var/cfengine/lib
-LDLIBS=-Wl,-rpath,/var/cfengine/lib -lcrypto 
+LDLIBS=-Wl,-rpath,/var/cfengine/lib -lcrypto -ltokyocabinet 
 EXAMPLES=cf-keycrypt
 
 all: $(EXAMPLES) 

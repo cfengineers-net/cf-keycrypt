@@ -1,0 +1,14 @@
+Source: cf-keycrypt
+Section: admin
+Priority: optional
+Maintainer: Michal Svamberg <svamberg@civ.zcu.cz>
+Build-Depends: debhelper (>= 9), gcc, make, libc6-dev, libssl-dev, libtokyocabinet-dev, cfengine-community | cfengine3
+Standards-Version: 3.9.5
+Homepage: http://github.com/cfengineers-net/cf-keycrypt
+
+Package: cf-keycrypt
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libtokyocabinet9 | cfengine-community | cfengine3
+Description: CFEngine cryptographic keys to encrypt and decrypt files
+ Use CFEngine cryptographic keys to encrypt and decrypt files, eg. files
+ containing passwords or certificates.
