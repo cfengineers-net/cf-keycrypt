@@ -1,32 +1,15 @@
+# Make with:
+# 
+# make CFENGINE_SOURCE=/path/to/cfengine/source CFENGINE_INSTALLDIR=/path/to/cfengine/installdir
+#
 CC=gcc
-# Solaris
-# CFLAGS= -g -Wall -I/usr/local/ssl/include
-# For Linux cf-ppcrypt compilation: export LD_RUN_PATH=/var/cfengine/lib && make
-# Solaris:
-# LDFLAGS= -R/var/cfengine/lib -L/var/cfengine/lib
-LDFLAGS= -L/var/cfengine/lib
-LDLIBS=-Wl,-rpath,/var/cfengine/lib -lcrypto -ltokyocabinet 
-EXAMPLES=cf-keycrypt
 
-all: $(EXAMPLES) 
+CFENGINE_SOURCE=/usr/local/src
+CFENGINE_PREFIX=/usr/local
+CFLAGS=-I$(CFENGINE_PREFIX)/include -I$(CFENGINE_SOURCE) -I$(CFENGINE_SOURCE)/libutils -I$(CFENGINE_SOURCE)/libpromises -I$(CFENGINE_SOURCE)/libcfnet
+LDFLAGS=-L$(CFENGINE_PREFIX)/lib
+LDLIBS=-Wl,-rpath,$(CFENGINE_PREFIX)/lib -lpromises -lcrypto
 
-clean:	
-	rm -f $(EXAMPLES) 
+OBJECTS=cf-keycrypt
 
-
-#CC=gcc
-# Solaris
-# CFLAGS= -g -Wall -I/usr/local/ssl/include
-# For Linux cf-ppcrypt compilation: export LD_RUN_PATH=/var/cfengine/lib && make
-# Solaris:
-# LDFLAGS= -R/var/cfengine/lib -L/var/cfengine/lib
-#LDFLAGS= -L/var/cfengine/lib -R/var/cfengine/lib
-#CFLAGS= -I/var/cfengine/include
-#LDLIBS= -lcrypto -ltokyocabinet -lsocket -lnsl
-#EXAMPLES=cf-keycrypt
-
-#all: $(EXAMPLES) 
-
-#clean:  
-#        rm -f $(EXAMPLES) 
-
+all: $(OBJECTS)

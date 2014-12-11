@@ -15,25 +15,28 @@
    GNU General Public License for more details.
 */
 
-#include <config.h>
-#include <cf3.defs.h>
-#include <cf3.extern.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <strings.h>
+#include <string.h>
+#include <time.h>
+#include <openssl/pem.h>
 #include <openssl/err.h>
-
-#include <lastseen.h>
-#include <conversion.h>
-#include <files_hashes.h>
-#include <locks.h>
-#include <item_lib.h>
-#include <known_dirs.h>
-#include <dbm_api.h>
-#ifdef LMDB
-#include <lmdb.h>
-#endif
+#include <openssl/rsa.h>
+#include <tchdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <netdb.h>
 
 #define STDIN     0
 #define STDOUT    1
 
+#define WORKDIR "/var/cfengine"
+//#define WORKDIR "./"
+#define LASTSEEN_DB WORKDIR "/cf_lastseen.tcdb"
+#define PPKEYS WORKDIR "/ppkeys"
 #define BUFSIZE 1024
 
 void usage() {
@@ -79,34 +82,43 @@ int file_exist(char *filename) {
 char *get_host_pubkey(char *host) {
 	char *key;
 	char value[BUFSIZE];
-	//char *buffer = (char *) malloc(BUFSIZE *sizeof(char));
-	//char *keyname = NULL;
-	char hash[CF_HOSTKEY_STRING_SIZE];
-	char buffer[BUFSIZE];
-	char ipaddress[BUFSIZE];
+	char *buffer = (char *) malloc(BUFSIZE *sizeof(char));
+	char *keyname = NULL;
+	char needle[BUFSIZE];
+	TCHDB *hdb;
+  hdb = tchdbnew();
 	int ecode;
 	struct addrinfo *result;
 	struct addrinfo *res;
-	bool found;
 
+	if(tchdbopen(hdb,LASTSEEN_DB,HDBOREADER) != 1){
+		printf("%s for database '%s'\n",tchdberrmsg(tchdbecode(hdb)),LASTSEEN_DB);
+		return NULL;
+	}
 	int error = getaddrinfo(host,NULL,NULL,&result);
 
-	for(res = result; res != NULL && !found; res = res->ai_next) {
-		inet_ntop(res->ai_family, get_in_addr((struct sockaddr *)res->ai_addr), ipaddress, sizeof(ipaddress));
-		if((strcmp(ipaddress, "127.0.0.1") == 0) || (strcmp(ipaddress, "::1") == 0)){
-			found = true;
-			sprintf(buffer,"%s/ppkeys/localhost.pub",WORKDIR);
-			return buffer;
+	for(res = result; res != NULL; res = res->ai_next) {
+		inet_ntop(res->ai_family, get_in_addr((struct sockaddr *)res->ai_addr), needle, sizeof(needle));
+
+		tchdbiterinit(hdb);
+		while((key = tchdbiternext2(hdb)) != NULL && keyname == NULL){
+			if(strspn(key,"k") == 1){
+				tchdbget3(hdb, key, strlen(key) + 1, value, BUFSIZE);
+				if(strcmp(value,needle) == 0){
+					keyname = ++key;
+				}
+			}
 		}
-		found = Address2Hostkey(hash, sizeof(hash), ipaddress);
 	}
-	if(found) {
-		sprintf(buffer,"%s/ppkeys/root-%s.pub",WORKDIR,hash);
+	tchdbclose(hdb);
+
+	if(keyname) {
+		sprintf(buffer,"%s/root-%s.pub",PPKEYS,keyname);
 		return buffer;
 	}else{
 		for(res = result; res != NULL; res = res->ai_next) {
-			inet_ntop(res->ai_family, get_in_addr((struct sockaddr *)res->ai_addr), ipaddress, sizeof(ipaddress));
-			sprintf(buffer,"%s/ppkeys/root-%s.pub",WORKDIR,ipaddress);
+			inet_ntop(res->ai_family, get_in_addr((struct sockaddr *)res->ai_addr), needle, sizeof(needle));
+			sprintf(buffer,"%s/root-%s.pub",PPKEYS,needle);
 			if(file_exist(buffer)){
 				return buffer;
 			}
@@ -128,7 +140,7 @@ void *readseckey(char *secfile) {
  
 	if ((PRIVKEY = PEM_read_RSAPrivateKey(fp,(RSA **)NULL,NULL,passphrase)) == NULL) {
 		err = ERR_get_error();
-		printf("PEM_readError reading Private Key = %s\n", ERR_reason_error_string(err));
+		printf("PEM_readError reading Private Key = %s\n",ERR_reason_error_string(err));
 		PRIVKEY = NULL;
 		fclose(fp);
 		return (void *)NULL;
@@ -270,8 +282,6 @@ int main(int argc, char *argv[]) {
 	int decrypt = 0;
 	int c = 0;
 	int size = 0;
-
-	strcpy(CFWORKDIR,WORKDIR);
 
   while ((c = getopt (argc, argv, "he:d:i:o:H:")) != -1)
 		switch (c)

@@ -1,0 +1,32 @@
+CC=gcc
+# Solaris
+# CFLAGS= -g -Wall -I/usr/local/ssl/include
+# For Linux cf-ppcrypt compilation: export LD_RUN_PATH=/var/cfengine/lib && make
+# Solaris:
+# LDFLAGS= -R/var/cfengine/lib -L/var/cfengine/lib
+LDFLAGS= -L/var/cfengine/lib
+LDLIBS=-Wl,-rpath,/var/cfengine/lib -lcrypto -ltokyocabinet 
+EXAMPLES=cf-keycrypt
+
+all: $(EXAMPLES) 
+
+clean:	
+	rm -f $(EXAMPLES) 
+
+
+#CC=gcc
+# Solaris
+# CFLAGS= -g -Wall -I/usr/local/ssl/include
+# For Linux cf-ppcrypt compilation: export LD_RUN_PATH=/var/cfengine/lib && make
+# Solaris:
+# LDFLAGS= -R/var/cfengine/lib -L/var/cfengine/lib
+#LDFLAGS= -L/var/cfengine/lib -R/var/cfengine/lib
+#CFLAGS= -I/var/cfengine/include
+#LDLIBS= -lcrypto -ltokyocabinet -lsocket -lnsl
+#EXAMPLES=cf-keycrypt
+
+#all: $(EXAMPLES) 
+
+#clean:  
+#        rm -f $(EXAMPLES) 
+
