@@ -2,4 +2,5 @@ cf-keycrypt
 debian/cf-keycrypt.debhelper.log
 debian/cf-keycrypt.substvars
 debian/cf-keycrypt/
+debian/files
 
