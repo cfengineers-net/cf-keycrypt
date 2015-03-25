@@ -18,14 +18,21 @@ include /usr/share/dpkg/default.mk
 
 CF_SRC = /tmp/cf-keycrypt-cf3src
 
-# main packaging script based on dh7 syntax
-%:
+clean:
+	rm -f cf-keycrypt
+	rm -rf $(CF_SRC)
+	dh $@
+
+binary:
 	mkdir -p $(CF_SRC)
 	git clone https://github.com/cfengine/core.git $(CF_SRC)
 	cd $(CF_SRC) ; ./autogen.sh ; make
 	gcc -std=gnu99 -I/var/cfengine/include -I$(CF_SRC) -I$(CF_SRC)/libutils -I$(CF_SRC)/libpromises -I$(CF_SRC)/libcfnet  -L$(CF_SRC)/libpromises/.libs cf-keycrypt.c -Wl,-rpath,/var/cfengine/lib/ -lpromises -lcrypto -o cf-keycrypt
 	rm -rf $(CF_SRC) 
-	dh $@ 
+	dh $@
+
+build:
+	dh $@
 
 # debmake generated override targets
 # This is example for Cmake (See http://bugs.debian.org/641051 )
