@@ -32,6 +32,9 @@ binary:
 	dh $@
 
 build:
+	dh_testdir	
+
+%:
 	dh $@
 
 # debmake generated override targets
