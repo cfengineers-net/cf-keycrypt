@@ -1,0 +1,12 @@
+cf-keycrypt (0.1.1) unstable; urgency=medium
+
+  * Use the cfengine database access methods instead in order to avoid implementing TCDB/LMDB/QDBM specific code
+  * Need compile cfengine-community from github
+
+ -- Michal Svamberg <svamberg@civ.zcu.cz>  Wed, 25 Mar 2015 15:52:49 +0100
+
+cf-keycrypt (0.1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Michal Svamberg <svamberg@civ.zcu.cz>  Fri, 07 Nov 2014 10:42:00 +0100
