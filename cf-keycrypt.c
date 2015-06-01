@@ -27,9 +27,11 @@
 #include <item_lib.h>
 #include <known_dirs.h>
 #include <dbm_api.h>
+/*
 #ifdef LMDB
 #include <lmdb.h>
 #endif
+*/
 
 #define STDIN     0
 #define STDOUT    1
@@ -37,6 +39,7 @@
 #define BUFSIZE 1024
 
 void usage() {
+	printf("Workdir is defined as %s\n", WORKDIR);
 	printf(
 "\n"
 "Usage: cf-keycrypt [-e public-key|-d private-key|-H hostname-or-ip] -o outfile -i infile [-h]\n"
@@ -271,7 +274,7 @@ int main(int argc, char *argv[]) {
 	int c = 0;
 	int size = 0;
 
-	strcpy(CFWORKDIR,WORKDIR);
+//	strcpy(WORKDIR,CFCR_WORKDIR);
 
   while ((c = getopt (argc, argv, "he:d:i:o:H:")) != -1)
 		switch (c)
