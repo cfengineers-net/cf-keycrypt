@@ -14,7 +14,7 @@ UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),SunOS)
 	# Solaris
-	LDFLAGS=-R$(CFENGINE_PREFIX)/lib -L$(CFENGINE_PREFIX)/lib
+	LDFLAGS=$(LDFLAGS) -R$(CFENGINE_PREFIX)/lib -L$(CFENGINE_PREFIX)/lib
 	#LDFLAGS=-L$(CFENGINE_PREFIX)/lib
 	LDLIBS=-lpromises -lcrypto -lnsl -lsocket
 	#LDLIBS=-Wl,-rpath,$(CFENGINE_PREFIX)/lib -lpromises -lcrypto
@@ -24,7 +24,7 @@ endif
 
 ifeq ($(UNAME_S),Linux)
 	# Linux
-	LDFLAGS=-L$(CFENGINE_PREFIX)/lib -Wl,-rpath -Wl,$(CFENGINE_PREFIX)/lib 
+	LDFLAGS=$(LDFLAGS) -L$(CFENGINE_PREFIX)/lib -Wl,-rpath -Wl,$(CFENGINE_PREFIX)/lib 
 	LDLIBS=-lpromises -lcrypto
 endif
 
