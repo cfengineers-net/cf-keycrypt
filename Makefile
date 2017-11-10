@@ -24,8 +24,8 @@ endif
 
 ifeq ($(UNAME_S),Linux)
 	# Linux
-	LDFLAGS=-L$(CFENGINE_PREFIX)/lib
-	LDLIBS=-Wl,-rpath,$(CFENGINE_PREFIX)/lib -lpromises -lcrypto
+	LDFLAGS=-L$(CFENGINE_PREFIX)/lib -Wl,-rpath -Wl,$(CFENGINE_PREFIX)/lib 
+	LDLIBS=-lpromises -lcrypto
 endif
 
 OBJECTS=cf-keycrypt
